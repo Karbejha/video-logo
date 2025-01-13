@@ -6,11 +6,14 @@ const fs = require('fs');
 const cors = require('cors');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT ||5000;
 
 // Middleware to enable CORS
-app.use(cors());
-
+app.use(cors({
+    origin: process.env.CORS_ORIGIN, // Use the environment variable
+    methods: ['GET', 'POST'],
+    credentials: true,
+  }));
 // Middleware to serve static files from the "uploads" folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
