@@ -10,7 +10,7 @@ const PORT = process.env.PORT ||5000;
 
 // Middleware to enable CORS
 app.use(cors({
-    origin: process.env.CORS_ORIGIN, // Use the environment variable
+    origin: 'https://video-logo.vercel.app/', // Replace with your Vercel frontend URL
     methods: ['GET', 'POST'],
     credentials: true,
   }));

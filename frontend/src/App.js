@@ -30,7 +30,7 @@ function App() {
       setProgress(0); // Reset progress
       setIsProcessing(true); // Start processing
 
-      const response = await axios.post('http://localhost:5000/process', formData, {
+      const response = await axios.post('https://video-logo.onrender.com', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);

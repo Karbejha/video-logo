@@ -1,0 +1,9 @@
+services:
+  - type: web
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.js
+    env: node
+    envVars:
+      - key: NODE_ENV
+        value: production
