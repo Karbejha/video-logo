@@ -10,6 +10,8 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [logoPosition, setLogoPosition] = useState('top-left'); // Default position
   const [logoSize, setLogoSize] = useState(20); // Default size (percentage of video width)
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 
   const onDropVideo = (acceptedFiles) => setVideo(acceptedFiles[0]);
   const onDropLogo = (acceptedFiles) => setLogo(acceptedFiles[0]);
@@ -30,8 +32,10 @@ function App() {
       setProgress(0); // Reset progress
       setIsProcessing(true); // Start processing
 
-      const response = await axios.post('https://video-logo.onrender.com', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const response = await axios.post(`${API_URL}/process`, formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data'
+        },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setProgress(percentCompleted);
@@ -105,25 +109,26 @@ function App() {
           <progress value={progress} max="100" style={{ width: '100%' }} />
         </div>
       )}
-      {outputVideo && (
-        <div style={{ marginTop: '20px' }}>
-          <h3>Download Processed Video:</h3>
-          <a
-            href={`http://localhost:5000/uploads/${outputVideo}`}
-            download
-            style={{
-              display: 'inline-block',
-              padding: '10px 20px',
-              backgroundColor: '#28a745',
-              color: '#fff',
-              textDecoration: 'none',
-              borderRadius: '5px',
-            }}
-          >
-            Download Video
-          </a>
-        </div>
-      )}
+              {outputVideo && (
+          <div style={{ marginTop: '20px' }}>
+            <h3>Download Processed Video:</h3>
+            
+            <a
+              href={`${API_URL}/uploads/${outputVideo}`}
+              download
+              style={{
+                display: 'inline-block',
+                padding: '10px 20px',
+                backgroundColor: '#28a745',
+                color: '#fff',
+                textDecoration: 'none',
+                borderRadius: '5px',
+              }}
+            >
+              Download Video
+            </a>
+          </div>
+        )}
     </div>
   );
 }

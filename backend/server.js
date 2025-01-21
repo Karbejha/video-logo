@@ -6,14 +6,24 @@ const fs = require('fs');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT ||5000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware to enable CORS
 app.use(cors({
-    origin: 'https://video-logo.vercel.app/', // Replace with your Vercel frontend URL
-    methods: ['GET', 'POST'],
-    credentials: true,
-  }));
+  origin: function(origin, callback) {
+    const allowedOrigins = ['https://video-logo.vercel.app', 'http://localhost:3000'];
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  credentials: true
+}));
+
 // Middleware to serve static files from the "uploads" folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -41,8 +51,8 @@ app.post('/process', upload.fields([{ name: 'video' }, { name: 'logo' }]), (req,
     const logoPath = req.files['logo'][0].path;
     const outputVideoPath = `uploads/output-${Date.now()}.mp4`;
 
-    const logoPosition = req.body.logoPosition || 'top-left'; // Default position
-    const logoSize = parseFloat(req.body.logoSize) || 20; // Default size (percentage of video width)
+    const logoPosition = req.body.logoPosition || 'top-left';
+    const logoSize = parseFloat(req.body.logoSize) || 20;
 
     console.log('Video Path:', videoPath);
     console.log('Logo Path:', logoPath);
@@ -61,7 +71,7 @@ app.post('/process', upload.fields([{ name: 'video' }, { name: 'logo' }]), (req,
 
       // Calculate logo dimensions based on percentage of video width
       const logoWidth = (videoWidth * logoSize) / 100;
-      const logoHeight = 'ih*ow/iw'; // Maintain aspect ratio
+      const logoHeight = 'ih*ow/iw';
 
       // Calculate logo position
       let overlayX, overlayY;
