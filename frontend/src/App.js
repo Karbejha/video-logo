@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 
+const API_URL = 'https://latakia-logo.onrender.com';
+
 function App() {
   const [video, setVideo] = useState(null);
   const [logo, setLogo] = useState(null);
   const [outputVideo, setOutputVideo] = useState(null);
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [logoPosition, setLogoPosition] = useState('top-left'); // Default position
-  const [logoSize, setLogoSize] = useState(20); // Default size (percentage of video width)
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
+  const [logoPosition, setLogoPosition] = useState('top-left');
+  const [logoSize, setLogoSize] = useState(20);
 
   const onDropVideo = (acceptedFiles) => setVideo(acceptedFiles[0]);
   const onDropLogo = (acceptedFiles) => setLogo(acceptedFiles[0]);
@@ -19,6 +19,20 @@ function App() {
   const handleProcess = async () => {
     if (!video || !logo) {
       alert('Please upload both video and logo!');
+      return;
+    }
+  
+    // Add size validation
+    const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+    const MAX_LOGO_SIZE = 5 * 1024 * 1024; // 5MB
+  
+    if (video.size > MAX_VIDEO_SIZE) {
+      alert('Video file size should be less than 100MB');
+      return;
+    }
+  
+    if (logo.size > MAX_LOGO_SIZE) {
+      alert('Logo file size should be less than 5MB');
       return;
     }
 
@@ -29,8 +43,8 @@ function App() {
     formData.append('logoSize', logoSize);
 
     try {
-      setProgress(0); // Reset progress
-      setIsProcessing(true); // Start processing
+      setProgress(0);
+      setIsProcessing(true);
 
       const response = await axios.post(`${API_URL}/process`, formData, {
         headers: { 
@@ -47,7 +61,15 @@ function App() {
       alert('Video processed successfully! Click the download button to save your video.');
     } catch (error) {
       console.error('Error processing video:', error);
-      alert('Failed to process the video. Please try again.');
+      let errorMessage = 'Failed to process the video. Please try again.';
+      
+      if (error.response) {
+        errorMessage = error.response.data.error || errorMessage;
+      } else if (error.request) {
+        errorMessage = 'No response from server. Please check your connection.';
+      }
+      
+      alert(errorMessage);
       setIsProcessing(false);
     }
   };
@@ -109,26 +131,36 @@ function App() {
           <progress value={progress} max="100" style={{ width: '100%' }} />
         </div>
       )}
-              {outputVideo && (
-          <div style={{ marginTop: '20px' }}>
-            <h3>Download Processed Video:</h3>
-            
-            <a
-              href={`${API_URL}/uploads/${outputVideo}`}
-              download
-              style={{
-                display: 'inline-block',
-                padding: '10px 20px',
-                backgroundColor: '#28a745',
-                color: '#fff',
-                textDecoration: 'none',
-                borderRadius: '5px',
-              }}
-            >
-              Download Video
-            </a>
-          </div>
-        )}
+      {outputVideo && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>Download Processed Video:</h3>
+          
+            href={`${API_URL}/uploads/${outputVideo}`}
+            download
+            style={{
+              display: 'inline-block',
+              padding: '10px 20px',
+              backgroundColor: '#28a745',
+              color: '#fff',
+              textDecoration: 'none',
+              borderRadius: '5px',
+            }}
+          <a
+            href={`${API_URL}/uploads/${outputVideo}`}
+            download
+            style={{
+              display: 'inline-block',
+              padding: '10px 20px',
+              backgroundColor: '#28a745',
+              color: '#fff',
+              textDecoration: 'none',
+              borderRadius: '5px',
+            }}
+          >
+            Download Video
+          </a>
+        </div>
+      )}
     </div>
   );
 }

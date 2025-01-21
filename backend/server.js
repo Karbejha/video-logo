@@ -8,11 +8,10 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware to enable CORS
 app.use(cors({
   origin: function(origin, callback) {
     const allowedOrigins = ['https://video-logo.vercel.app', 'http://localhost:3000'];
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin 
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) === -1) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
