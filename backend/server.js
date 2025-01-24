@@ -8,30 +8,13 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({
-  origin: function(origin, callback) {
-    const allowedOrigins = ['https://video-logo.vercel.app', 'http://localhost:3000'];
-    // Allow requests with no origin 
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  methods: ['GET', 'POST', 'OPTIONS'],
-  credentials: true
-}));
+// Configure FFmpeg
+ffmpeg.setFfmpegPath('/usr/local/bin/ffmpeg'); // Ensure FFmpeg is installed
 
-// Middleware to serve static files from the "uploads" folder
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const validVideoFormats = ['.mp4', '.mov'];
+const validLogoFormats = ['.png', '.webp'];
+const MAX_VIDEO_DURATION = 300; // 5 minutes
 
-// Create the "uploads" folder if it doesn't exist
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
-}
-
-// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads');
@@ -41,97 +24,90 @@ const storage = multer.diskStorage({
     cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
   },
 });
-const upload = multer({ storage });
 
-// Endpoint to process the video
-app.post('/process', upload.fields([{ name: 'video' }, { name: 'logo' }]), (req, res) => {
+const upload = multer({
+  storage,
+  limits: { fileSize: 30 * 1024 * 1024, files: 2 },
+});
+
+app.use(cors());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
+
+const cleanup = (filePath) => {
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+};
+
+const handleFfmpegError = (err, videoOutputPath, reject) => {
+  console.error('FFmpeg error:', err);
+  cleanup(videoOutputPath);
+  reject(new Error('Error during video processing'));
+};
+
+app.post('/process', upload.fields([{ name: 'video' }, { name: 'logo' }]), async (req, res) => {
+  const { logoPosition = 'top-left', logoSize = 20 } = req.body;
+  const videoFile = req.files.video[0];
+  const logoFile = req.files.logo[0];
+
+  const videoOutputPath = `uploads/output-${Date.now()}.mp4`;
+
   try {
-    const videoPath = req.files['video'][0].path;
-    const logoPath = req.files['logo'][0].path;
-    const outputVideoPath = `uploads/output-${Date.now()}.mp4`;
+    if (!validVideoFormats.includes(path.extname(videoFile.originalname).toLowerCase())) {
+      throw new Error('Invalid video format. Only MP4 and MOV are supported.');
+    }
 
-    const logoPosition = req.body.logoPosition || 'top-left';
-    const logoSize = parseFloat(req.body.logoSize) || 20;
+    if (!validLogoFormats.includes(path.extname(logoFile.originalname).toLowerCase())) {
+      throw new Error('Invalid logo format. Only PNG and WEBP are supported.');
+    }
 
-    console.log('Video Path:', videoPath);
-    console.log('Logo Path:', logoPath);
-    console.log('Logo Position:', logoPosition);
-    console.log('Logo Size:', logoSize);
-
-    // Get video dimensions to calculate logo size
-    ffmpeg.ffprobe(videoPath, (err, metadata) => {
-      if (err) {
-        console.error('Error getting video metadata:', err);
-        return res.status(500).json({ error: 'Failed to process the video', details: err.message });
-      }
-
-      const videoWidth = metadata.streams[0].width;
-      const videoHeight = metadata.streams[0].height;
-
-      // Calculate logo dimensions based on percentage of video width
-      const logoWidth = (videoWidth * logoSize) / 100;
-      const logoHeight = 'ih*ow/iw';
-
-      // Calculate logo position
-      let overlayX, overlayY;
-      switch (logoPosition) {
-        case 'top-left':
-          overlayX = 10;
-          overlayY = 10;
-          break;
-        case 'top-right':
-          overlayX = videoWidth - logoWidth - 10;
-          overlayY = 10;
-          break;
-        case 'bottom-left':
-          overlayX = 10;
-          overlayY = videoHeight - logoWidth - 10;
-          break;
-        case 'bottom-right':
-          overlayX = videoWidth - logoWidth - 10;
-          overlayY = videoHeight - logoWidth - 10;
-          break;
-        default:
-          overlayX = 10;
-          overlayY = 10;
-      }
-
-      // Run FFmpeg command to overlay logo on video
-      ffmpeg(videoPath)
-        .input(logoPath)
-        .complexFilter([
-          {
-            filter: 'scale',
-            options: { w: logoWidth, h: logoHeight },
-            inputs: '1:v',
-            outputs: 'logo',
-          },
-          {
-            filter: 'overlay',
-            options: { x: overlayX, y: overlayY },
-            inputs: ['0:v', 'logo'],
-            outputs: 'out',
-          },
-        ])
-        .outputOptions('-map', '[out]')
-        .save(outputVideoPath)
-        .on('end', () => {
-          console.log('Video processing completed:', outputVideoPath);
-          res.json({ output: path.basename(outputVideoPath) });
-        })
-        .on('error', (err) => {
-          console.error('FFmpeg Error:', err.message);
-          console.error('FFmpeg Command:', err.cmd);
-          res.status(500).json({ error: 'Failed to process the video', details: err.message });
-        });
+    const videoDuration = await new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(videoFile.path, (err, metadata) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(metadata.format.duration);
+      });
     });
-  } catch (err) {
-    console.error('Unexpected error:', err.message);
-    res.status(500).json({ error: 'An unexpected error occurred', details: err.message });
+
+    if (videoDuration > MAX_VIDEO_DURATION) {
+      throw new Error(`Video exceeds max duration of ${MAX_VIDEO_DURATION} seconds`);
+    }
+
+    const overlay = {
+      'top-left': '10:10',
+      'top-right': 'main_w-overlay_w-10:10',
+      'bottom-left': '10:main_h-overlay_h-10',
+      'bottom-right': 'main_w-overlay_w-10:main_h-overlay_h-10',
+    }[logoPosition];
+
+    await new Promise((resolve, reject) => {
+      ffmpeg(videoFile.path)
+        .input(logoFile.path)
+        .complexFilter([
+          `[1:v]scale=${logoSize}%:logo`,
+          `[0:v][logo]overlay=${overlay}`,
+        ])
+        .outputOptions(['-c:v libx264', '-preset ultrafast', '-crf 28', '-movflags +faststart'])
+        .on('error', (err) => handleFfmpegError(err, videoOutputPath, reject))
+        .on('end', () => resolve())
+        .save(videoOutputPath);
+    });
+
+    cleanup(videoFile.path);
+    cleanup(logoFile.path);
+
+    res.json({ output: path.basename(videoOutputPath) });
+  } catch (error) {
+    console.error('Error processing video:', error);
+    cleanup(videoFile.path);
+    cleanup(logoFile.path);
+    return res.status(400).json({ error: error.message });
   }
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 
 const API_URL = 'https://latakia-logo.onrender.com';
+const validVideoTypes = ['video/mp4', 'video/quicktime'];
+const validLogoTypes = ['image/png', 'image/webp'];
 
 function App() {
   const [video, setVideo] = useState(null);
@@ -21,18 +23,29 @@ function App() {
       alert('Please upload both video and logo!');
       return;
     }
-  
-    // Add size validation
-    const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
-    const MAX_LOGO_SIZE = 5 * 1024 * 1024; // 5MB
-  
-    if (video.size > MAX_VIDEO_SIZE) {
-      alert('Video file size should be less than 100MB');
+
+    // File type validation
+    if (!validVideoTypes.includes(video.type)) {
+      alert('Only MP4/MOV videos are supported');
       return;
     }
-  
+
+    if (!validLogoTypes.includes(logo.type)) {
+      alert('Only PNG/WEBP logos are supported');
+      return;
+    }
+
+    // Size validation
+    const MAX_VIDEO_SIZE = 30 * 1024 * 1024; // Limit to 30MB to avoid server timeout
+    const MAX_LOGO_SIZE = 1 * 1024 * 1024; // Limit logo to 1MB
+
+    if (video.size > MAX_VIDEO_SIZE) {
+      alert('Video file size should be less than 30MB');
+      return;
+    }
+
     if (logo.size > MAX_LOGO_SIZE) {
-      alert('Logo file size should be less than 5MB');
+      alert('Logo file size should be less than 1MB');
       return;
     }
 
@@ -54,6 +67,7 @@ function App() {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setProgress(percentCompleted);
         },
+        timeout: 600000 // Increased to 10 minutes to allow time for server processing
       });
 
       setOutputVideo(response.data.output);
@@ -62,13 +76,15 @@ function App() {
     } catch (error) {
       console.error('Error processing video:', error);
       let errorMessage = 'Failed to process the video. Please try again.';
-      
+
       if (error.response) {
         errorMessage = error.response.data.error || errorMessage;
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Processing timeout. Please try with a shorter video.';
       } else if (error.request) {
         errorMessage = 'No response from server. Please check your connection.';
       }
-      
+
       alert(errorMessage);
       setIsProcessing(false);
     }
@@ -77,16 +93,19 @@ function App() {
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       <h1>Logo on Video Tool</h1>
+      
       <div style={{ marginBottom: '20px' }}>
-        <h3>Upload Video</h3>
-        <Dropzone onDrop={onDropVideo} />
+        <h3>Upload Video (MP4/MOV, max 30MB)</h3>
+        <Dropzone onDrop={onDropVideo} accept={validVideoTypes} />
         {video && <p>Selected Video: {video.name}</p>}
       </div>
+
       <div style={{ marginBottom: '20px' }}>
-        <h3>Upload Logo</h3>
-        <Dropzone onDrop={onDropLogo} />
+        <h3>Upload Logo (PNG/WEBP, max 1MB)</h3>
+        <Dropzone onDrop={onDropLogo} accept={validLogoTypes} />
         {logo && <p>Selected Logo: {logo.name}</p>}
       </div>
+
       <div style={{ marginBottom: '20px' }}>
         <h3>Logo Position</h3>
         <select
@@ -100,17 +119,19 @@ function App() {
           <option value="bottom-right">Bottom Right</option>
         </select>
       </div>
+
       <div style={{ marginBottom: '20px' }}>
         <h3>Logo Size (% of Video Width)</h3>
         <input
           type="number"
           value={logoSize}
-          onChange={(e) => setLogoSize(e.target.value)}
+          onChange={(e) => setLogoSize(Math.min(Math.max(e.target.value, 1), 50))}
           min="1"
-          max="100"
+          max="50"
           style={{ padding: '5px', fontSize: '16px' }}
         />
       </div>
+
       <button
         onClick={handleProcess}
         disabled={isProcessing}
@@ -125,26 +146,17 @@ function App() {
       >
         {isProcessing ? 'Processing...' : 'Process Video'}
       </button>
+
       {isProcessing && (
         <div style={{ marginTop: '20px' }}>
           <p>Processing: {progress}%</p>
           <progress value={progress} max="100" style={{ width: '100%' }} />
         </div>
       )}
+
       {outputVideo && (
         <div style={{ marginTop: '20px' }}>
           <h3>Download Processed Video:</h3>
-          
-            href={`${API_URL}/uploads/${outputVideo}`}
-            download
-            style={{
-              display: 'inline-block',
-              padding: '10px 20px',
-              backgroundColor: '#28a745',
-              color: '#fff',
-              textDecoration: 'none',
-              borderRadius: '5px',
-            }}
           <a
             href={`${API_URL}/uploads/${outputVideo}`}
             download
@@ -165,8 +177,12 @@ function App() {
   );
 }
 
-function Dropzone({ onDrop }) {
-  const { getRootProps, getInputProps } = useDropzone({ onDrop });
+function Dropzone({ onDrop, accept }) {
+  const { getRootProps, getInputProps } = useDropzone({ 
+    onDrop,
+    accept: accept?.join(',')
+  });
+  
   return (
     <div
       {...getRootProps()}
