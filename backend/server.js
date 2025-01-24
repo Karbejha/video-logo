@@ -13,7 +13,7 @@ ffmpeg.setFfmpegPath('/usr/local/bin/ffmpeg'); // Ensure FFmpeg is installed
 
 const validVideoFormats = ['.mp4', '.mov'];
 const validLogoFormats = ['.png', '.webp'];
-const MAX_VIDEO_DURATION = 600; // 10 minutes
+const MAX_VIDEO_DURATION = 900; // 15 minutes
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

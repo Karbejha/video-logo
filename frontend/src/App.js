@@ -67,7 +67,7 @@ function App() {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setProgress(percentCompleted);
         },
-        timeout: 600000 // Increased to 10 minutes to allow time for server processing
+        timeout: 900000 // Increased to 10 minutes to allow time for server processing
       });
 
       setOutputVideo(response.data.output);
