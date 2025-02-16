@@ -3,8 +3,10 @@ import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 
 const API_URL = 'https://latakia-logo.onrender.com';
-const validVideoTypes = ['video/mp4', 'video/quicktime'];
-const validLogoTypes = ['image/png', 'image/webp'];
+
+// Updated valid MIME types
+const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg']; // Commonly used video formats
+const validLogoTypes = ['image/png', 'image/jpeg', 'image/svg+xml']; // Commonly used image formats
 
 function App() {
   const [video, setVideo] = useState(null);
@@ -26,12 +28,12 @@ function App() {
 
     // File type validation
     if (!validVideoTypes.includes(video.type)) {
-      alert('Only MP4/MOV videos are supported');
+      alert('Only MP4, WEBM, or OGG videos are supported');
       return;
     }
 
     if (!validLogoTypes.includes(logo.type)) {
-      alert('Only PNG/WEBP logos are supported');
+      alert('Only PNG, JPEG, or SVG logos are supported');
       return;
     }
 
@@ -67,7 +69,7 @@ function App() {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setProgress(percentCompleted);
         },
-        timeout: 900000 // Increased to 10 minutes to allow time for server processing
+        timeout: 900000 // Increased to 15 minutes to allow time for server processing
       });
 
       setOutputVideo(response.data.output);
@@ -78,14 +80,17 @@ function App() {
       let errorMessage = 'Failed to process the video. Please try again.';
 
       if (error.response) {
-        errorMessage = error.response.data.error || errorMessage;
+        errorMessage = `Server Error: ${error.response.status} - ${error.response.data.error || error.response.statusText}`;
+        console.error('Server response:', error.response.data);
       } else if (error.code === 'ECONNABORTED') {
         errorMessage = 'Processing timeout. Please try with a shorter video.';
       } else if (error.request) {
         errorMessage = 'No response from server. Please check your connection.';
+      } else {
+        errorMessage = `Error: ${error.message}`;
       }
 
-      alert(errorMessage);
+      alert(`Error during video processing:\n${errorMessage}`);
       setIsProcessing(false);
     }
   };
@@ -95,14 +100,14 @@ function App() {
       <h1>Logo on Video Tool</h1>
       
       <div style={{ marginBottom: '20px' }}>
-        <h3>Upload Video (MP4/MOV, max 30MB)</h3>
-        <Dropzone onDrop={onDropVideo} accept={validVideoTypes} />
+        <h3>Upload Video (MP4, WEBM, OGG, max 30MB)</h3>
+        <Dropzone onDrop={onDropVideo} accept={validVideoTypes.join(',')} />
         {video && <p>Selected Video: {video.name}</p>}
       </div>
 
       <div style={{ marginBottom: '20px' }}>
-        <h3>Upload Logo (PNG/WEBP, max 1MB)</h3>
-        <Dropzone onDrop={onDropLogo} accept={validLogoTypes} />
+        <h3>Upload Logo (PNG, JPEG, SVG, max 1MB)</h3>
+        <Dropzone onDrop={onDropLogo} accept={validLogoTypes.join(',')} />
         {logo && <p>Selected Logo: {logo.name}</p>}
       </div>
 
@@ -180,7 +185,7 @@ function App() {
 function Dropzone({ onDrop, accept }) {
   const { getRootProps, getInputProps } = useDropzone({ 
     onDrop,
-    accept: accept?.join(',')
+    accept: accept
   });
   
   return (
