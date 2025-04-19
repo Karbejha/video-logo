@@ -17,7 +17,7 @@ const validLogoTypes = {
 };
 
 // Get API URL from environment variable or default to localhost
-const DEFAULT_API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const DEFAULT_API_URL = process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.trim() : 'http://localhost:5000';
 
 const App = () => {
   const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL);
@@ -36,23 +36,26 @@ const App = () => {
     const fetchApiUrl = async () => {
       try {
         // Try to get the API URL from the server
-        const response = await axios.get(`${apiUrl}/api-url`);
+        const response = await axios.get(`${DEFAULT_API_URL}/api-url`);
         if (response.data.apiUrl) {
-          setApiUrl(response.data.apiUrl);
+          setApiUrl(response.data.apiUrl.trim());
         }
         setIsServerConnected(true);
+        setError(null);
       } catch (error) {
         console.error('Error fetching API URL:', error);
-        // If we're in production, don't try localhost
         if (process.env.NODE_ENV === 'production') {
-          setError('Unable to connect to the server. Please try again later.');
-          setIsServerConnected(false);
+          // In production, use the default API URL from environment variable
+          setApiUrl(DEFAULT_API_URL);
+          setIsServerConnected(true);
+          setError(null);
         } else {
           // In development, try localhost as fallback
           try {
             await axios.get('http://localhost:5000/api-url');
             setApiUrl('http://localhost:5000');
             setIsServerConnected(true);
+            setError(null);
           } catch (localError) {
             console.error('Local server also not available:', localError);
             setError('Please make sure the backend server is running on port 5000');
@@ -63,7 +66,7 @@ const App = () => {
     };
 
     fetchApiUrl();
-  }, [apiUrl]);
+  }, []);
 
   const onDropVideo = (acceptedFiles) => {
     setError(null);

@@ -50,18 +50,18 @@ const upload = multer({
   }
 });
 
-// Middleware
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:5000',
-    'https://video-logo.vercel.app',
-    'https://*.vercel.app'
-  ],
+// Configure CORS based on environment
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? '*'  // Allow all origins in production
+    : ['http://localhost:3000', 'http://localhost:5000'],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
   credentials: true
-}));
+};
+
+// Middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(limiter);
 app.use('/uploads', express.static(path.join(__dirname, uploadFolder)));
