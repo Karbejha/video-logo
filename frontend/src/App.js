@@ -175,7 +175,7 @@ const App = () => {
             <p className="subtitle">(MP4, WEBM, OGG, max 30MB)</p>
             <Dropzone 
               onDrop={onDropVideo} 
-              accept={Object.keys(validVideoTypes)}
+              accept={validVideoTypes}
               maxFiles={1}
             />
             {video && (
@@ -191,7 +191,7 @@ const App = () => {
             <p className="subtitle">(PNG, JPEG, SVG, max 1MB)</p>
             <Dropzone 
               onDrop={onDropLogo} 
-              accept={Object.keys(validLogoTypes)}
+              accept={validLogoTypes}
               maxFiles={1}
             />
             {logo && (
@@ -278,7 +278,7 @@ const App = () => {
 function Dropzone({ onDrop, accept, maxFiles }) {
   const [error, setError] = useState(null);
 
-  const handleDrop = (acceptedFiles, rejectedFiles) => {
+  const handleDrop = useCallback((acceptedFiles, rejectedFiles) => {
     if (rejectedFiles && rejectedFiles.length > 0) {
       const error = rejectedFiles[0].errors[0];
       if (error.code === 'file-too-large') {
@@ -288,26 +288,42 @@ function Dropzone({ onDrop, accept, maxFiles }) {
     }
     setError(null);
     onDrop(acceptedFiles);
-  };
+  }, [onDrop]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop: handleDrop,
-    accept: accept.reduce((acc, type) => ({ ...acc, [type]: [] }), {}),
+    accept,
     maxFiles,
     multiple: false,
-    maxSize: accept.includes('video/*') ? 15 * 1024 * 1024 : 1 * 1024 * 1024
+    maxSize: accept.includes('video/mp4') ? 15 * 1024 * 1024 : 1 * 1024 * 1024
   });
   
   return (
     <div
       {...getRootProps()}
       className={`dropzone ${isDragActive ? 'active' : ''}`}
+      style={{
+        border: '2px dashed #cccccc',
+        borderRadius: '4px',
+        padding: '20px',
+        textAlign: 'center',
+        cursor: 'pointer',
+        backgroundColor: isDragActive ? '#f0f0f0' : '#ffffff',
+        transition: 'all 0.3s ease'
+      }}
     >
       <input {...getInputProps()} />
       {error ? (
-        <p className="error-message">{error}</p>
+        <p style={{ color: '#d32f2f' }}>{error}</p>
       ) : (
-        <p>{isDragActive ? 'Drop the file here' : 'Drag & drop a file here, or click to select'}</p>
+        <div>
+          <p style={{ margin: '0' }}>
+            {isDragActive ? 'Drop the file here' : 'Drag & drop a file here'}
+          </p>
+          <p style={{ margin: '8px 0 0', fontSize: '0.9em', color: '#666' }}>
+            or click to select
+          </p>
+        </div>
       )}
     </div>
   );
