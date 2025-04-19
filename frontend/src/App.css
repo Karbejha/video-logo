@@ -19,64 +19,85 @@ body {
   background-color: var(--background-color);
   color: var(--text-color);
   line-height: 1.6;
+  min-height: 100vh;
 }
 
 .app-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
 }
 
-header h1 {
-  font-size: 2.5rem;
+header .logo {
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 1rem;
+}
+
+header h2 {
+  font-size: 1.5rem;
   color: var(--primary-color);
   margin-bottom: 0.5rem;
 }
 
-header p {
-  font-size: 1.2rem;
-  color: var(--secondary-color);
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .upload-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin: 2rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 1rem 0;
 }
 
 .upload-box {
   background: white;
-  padding: 1.5rem;
+  padding: 1.25rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .upload-box h3 {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   color: var(--primary-color);
+  font-size: 1.25rem;
 }
 
 .upload-box .subtitle {
   color: #666;
   font-size: 0.9rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .dropzone {
   border: 2px dashed var(--border-color);
   border-radius: 8px;
-  padding: 2rem;
+  padding: 1.5rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
   background-color: white;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dropzone:hover,
@@ -97,8 +118,8 @@ header p {
 }
 
 .file-info {
-  margin-top: 1rem;
-  padding: 1rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
   background-color: var(--background-color);
   border-radius: 4px;
 }
@@ -106,55 +127,31 @@ header p {
 .file-info p {
   margin: 0.25rem 0;
   color: var(--text-color);
-}
-
-.size-limit {
-  margin: 0.5rem 0 0 0;
   font-size: 0.9rem;
-  color: #666;
-  font-style: italic;
-}
-
-.error-message {
-  color: #d32f2f;
-  background-color: #ffebee;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin: 1rem 0;
-  border: 1px solid #ffcdd2;
-}
-
-.success-message {
-  color: #2e7d32;
-  background-color: #e8f5e9;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin: 1rem 0;
-  border: 1px solid #c8e6c9;
 }
 
 .preview-section {
-  margin: 2rem 0;
+  margin: 1rem 0;
   text-align: center;
 }
 
 .preview-video {
   max-width: 100%;
   max-height: 400px;
-  border-radius: 4px;
+  border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .settings-section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  margin: 2rem 0;
+  gap: 1.5rem;
+  margin: 1rem 0;
 }
 
 .setting {
   background: white;
-  padding: 1.5rem;
+  padding: 1.25rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -163,6 +160,7 @@ header p {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
+  color: var(--text-color);
 }
 
 .setting select,
@@ -195,7 +193,7 @@ header p {
   display: block;
   width: 100%;
   max-width: 300px;
-  margin: 2rem auto;
+  margin: 1rem auto;
   padding: 1rem;
   background-color: var(--primary-color);
   color: white;
@@ -216,7 +214,7 @@ header p {
 }
 
 .progress-section {
-  margin: 2rem 0;
+  margin: 1rem 0;
   text-align: center;
 }
 
@@ -237,12 +235,12 @@ header p {
 
 .output-section {
   text-align: center;
-  margin: 2rem 0;
+  margin: 1rem 0;
 }
 
 .download-button {
   display: inline-block;
-  padding: 1rem 2rem;
+  padding: 0.75rem 1.5rem;
   background-color: var(--success-color);
   color: white;
   text-decoration: none;
@@ -255,20 +253,100 @@ header p {
   background-color: #27ae60;
 }
 
+.error-message {
+  color: var(--error-color);
+  background-color: #ffebee;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+  border: 1px solid #ffcdd2;
+  text-align: center;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
   .app-container {
-    padding: 1rem;
+    padding: 0.5rem;
   }
 
-  header h1 {
-    font-size: 2rem;
+  header {
+    margin-bottom: 1rem;
+  }
+
+  header h2 {
+    font-size: 1.25rem;
   }
 
   .upload-section {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .upload-box {
+    padding: 1rem;
   }
 
   .settings-section {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
+
+  .setting {
+    padding: 1rem;
+  }
+
+  .preview-video {
+    max-height: 300px;
+  }
+
+  .process-button {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  header h2 {
+    font-size: 1.1rem;
+  }
+
+  .upload-box h3 {
+    font-size: 1.1rem;
+  }
+
+  .dropzone {
+    padding: 1rem;
+    min-height: 100px;
+  }
+
+  .dropzone p {
+    font-size: 0.9rem;
+  }
+
+  .dropzone-hint {
+    font-size: 0.8rem;
+  }
+
+  .file-info p {
+    font-size: 0.8rem;
+  }
+
+  .preview-video {
+    max-height: 250px;
+  }
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .dropzone p,
+[dir="rtl"] .file-info p,
+[dir="rtl"] .setting label {
+  text-align: right;
+}
+
+[dir="rtl"] .process-button,
+[dir="rtl"] .download-button {
+  text-align: center;
 }
