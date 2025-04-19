@@ -17,7 +17,7 @@ const validLogoTypes = {
 };
 
 // Get API URL from environment variable or default to localhost
-const DEFAULT_API_URL = process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.trim() : 'http://localhost:5000';
+const DEFAULT_API_URL = process.env.REACT_APP_API_URL?.trim().replace(/\s+/g, '') || 'http://localhost:5000';
 
 const App = () => {
   const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL);
@@ -33,10 +33,10 @@ const App = () => {
   const [isServerConnected, setIsServerConnected] = useState(false);
 
   useEffect(() => {
-    const fetchApiUrl = async () => {
+    const checkServer = async () => {
       try {
-        // Try to get the API URL from the server
-        const response = await axios.get(`${DEFAULT_API_URL}/api-url`);
+        const url = new URL('/api-url', DEFAULT_API_URL);
+        const response = await axios.get(url.toString());
         if (response.data.apiUrl) {
           setApiUrl(response.data.apiUrl.trim());
         }
@@ -45,12 +45,10 @@ const App = () => {
       } catch (error) {
         console.error('Error fetching API URL:', error);
         if (process.env.NODE_ENV === 'production') {
-          // In production, use the default API URL from environment variable
           setApiUrl(DEFAULT_API_URL);
           setIsServerConnected(true);
           setError(null);
         } else {
-          // In development, try localhost as fallback
           try {
             await axios.get('http://localhost:5000/api-url');
             setApiUrl('http://localhost:5000');
@@ -65,24 +63,18 @@ const App = () => {
       }
     };
 
-    fetchApiUrl();
+    checkServer();
   }, []);
 
   const onDropVideo = (acceptedFiles) => {
     setError(null);
     const file = acceptedFiles[0];
     if (file) {
-      // Validate file type
-      const fileExtension = file.name.split('.').pop().toLowerCase();
-      const isValidType = Object.values(validVideoTypes).some(extensions => 
-        extensions.includes(`.${fileExtension}`)
-      );
-
-      if (!isValidType) {
+      const fileType = file.type.toLowerCase();
+      if (!Object.keys(validVideoTypes).includes(fileType)) {
         setError('Invalid video format. Only MP4, WEBM, and OGG are supported.');
         return;
       }
-
       setVideo(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
@@ -93,17 +85,11 @@ const App = () => {
     setError(null);
     const file = acceptedFiles[0];
     if (file) {
-      // Validate file type
-      const fileExtension = file.name.split('.').pop().toLowerCase();
-      const isValidType = Object.values(validLogoTypes).some(extensions => 
-        extensions.includes(`.${fileExtension}`)
-      );
-
-      if (!isValidType) {
+      const fileType = file.type.toLowerCase();
+      if (!Object.keys(validLogoTypes).includes(fileType)) {
         setError('Invalid logo format. Only PNG, JPEG, and SVG are supported.');
         return;
       }
-
       setLogo(file);
     }
   };
@@ -111,17 +97,6 @@ const App = () => {
   const handleProcess = async () => {
     if (!video || !logo) {
       setError('Please upload both video and logo!');
-      return;
-    }
-
-    // File type validation
-    if (!validVideoTypes.includes(video.type)) {
-      setError('Only MP4, WEBM, or OGG videos are supported');
-      return;
-    }
-
-    if (!validLogoTypes.includes(logo.type)) {
-      setError('Only PNG, JPEG, or SVG logos are supported');
       return;
     }
 
@@ -150,7 +125,8 @@ const App = () => {
       setIsProcessing(true);
       setError(null);
 
-      const response = await axios.post(`${apiUrl}/process`, formData, {
+      const url = new URL('/process', apiUrl);
+      const response = await axios.post(url.toString(), formData, {
         headers: { 
           'Content-Type': 'multipart/form-data'
         },
@@ -198,7 +174,7 @@ const App = () => {
             <p className="subtitle">(MP4, WEBM, OGG, max 30MB)</p>
             <Dropzone 
               onDrop={onDropVideo} 
-              accept={Object.keys(validVideoTypes).join(',')}
+              accept={Object.keys(validVideoTypes)}
               maxFiles={1}
             />
             {video && (
@@ -214,7 +190,7 @@ const App = () => {
             <p className="subtitle">(PNG, JPEG, SVG, max 1MB)</p>
             <Dropzone 
               onDrop={onDropLogo} 
-              accept={Object.keys(validLogoTypes).join(',')}
+              accept={Object.keys(validLogoTypes)}
               maxFiles={1}
             />
             {logo && (
@@ -301,7 +277,7 @@ const App = () => {
 function Dropzone({ onDrop, accept, maxFiles }) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
-    accept,
+    accept: accept.reduce((acc, type) => ({ ...acc, [type]: [] }), {}),
     maxFiles,
     multiple: false
   });
