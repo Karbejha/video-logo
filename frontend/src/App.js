@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 import './App.css';
@@ -101,11 +101,11 @@ const App = () => {
     }
 
     // Size validation
-    const MAX_VIDEO_SIZE = 30 * 1024 * 1024; // 30MB
+    const MAX_VIDEO_SIZE = 15 * 1024 * 1024; // 15MB for free tier
     const MAX_LOGO_SIZE = 1 * 1024 * 1024; // 1MB
 
     if (video.size > MAX_VIDEO_SIZE) {
-      setError('Video file size should be less than 30MB');
+      setError('Video file size should be less than 15MB for the free tier');
       return;
     }
 
@@ -134,11 +134,12 @@ const App = () => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setProgress(percentCompleted);
         },
-        timeout: 900000 // 15 minutes
+        timeout: 300000 // 5 minutes
       });
 
       if (response.data.success) {
         setOutputVideo(response.data.output);
+        setError(null);
       } else {
         setError(response.data.error || 'Failed to process video');
       }
@@ -146,12 +147,12 @@ const App = () => {
       console.error('Error processing video:', error);
       let errorMessage = 'Failed to process the video. Please try again.';
 
-      if (error.response) {
-        errorMessage = error.response.data.error || error.response.statusText;
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
       } else if (error.code === 'ECONNABORTED') {
         errorMessage = 'Processing timeout. Please try with a shorter video.';
-      } else if (error.request) {
-        errorMessage = 'No response from server. Please check your connection.';
+      } else if (!error.response) {
+        errorMessage = 'Connection error. Please check your internet connection.';
       }
 
       setError(errorMessage);
@@ -275,11 +276,23 @@ const App = () => {
 };
 
 function Dropzone({ onDrop, accept, maxFiles }) {
+  const handleDrop = (acceptedFiles, rejectedFiles) => {
+    if (rejectedFiles.length > 0) {
+      const error = rejectedFiles[0].errors[0];
+      if (error.code === 'file-too-large') {
+        setError('File is too large. Please try a smaller file.');
+        return;
+      }
+    }
+    onDrop(acceptedFiles);
+  };
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
-    onDrop,
+    onDrop: handleDrop,
     accept: accept.reduce((acc, type) => ({ ...acc, [type]: [] }), {}),
     maxFiles,
-    multiple: false
+    multiple: false,
+    maxSize: accept.includes('video/*') ? 15 * 1024 * 1024 : 1 * 1024 * 1024
   });
   
   return (
@@ -289,6 +302,99 @@ function Dropzone({ onDrop, accept, maxFiles }) {
     >
       <input {...getInputProps()} />
       <p>{isDragActive ? 'Drop the file here' : 'Drag & drop a file here, or click to select'}</p>
+    </div>
+  );
+}
+
+function FileUpload({ type, onUpload }) {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const maxSize = type === 'video' ? 15 * 1024 * 1024 : 2 * 1024 * 1024;
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleDrop = useCallback((acceptedFiles, rejectedFiles) => {
+    if (rejectedFiles && rejectedFiles.length > 0) {
+      setError('Invalid file type. Please upload a valid file.');
+      setSelectedFile(null);
+      setSuccess(false);
+      return;
+    }
+
+    const file = acceptedFiles[0];
+    if (file.size > maxSize) {
+      setError(`File size exceeds the ${formatFileSize(maxSize)} limit.`);
+      setSelectedFile(null);
+      setSuccess(false);
+      return;
+    }
+
+    setSelectedFile(file);
+    setError(null);
+    setSuccess(false);
+  }, [maxSize]);
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setError('Please select a file first.');
+      return;
+    }
+
+    try {
+      await onUpload(selectedFile);
+      setSuccess(true);
+      setError(null);
+      setSelectedFile(null);
+    } catch (err) {
+      setError(err.message || 'An error occurred during upload.');
+      setSuccess(false);
+    }
+  };
+
+  return (
+    <div className="upload-section">
+      <h3>{type === 'video' ? 'Upload Video' : 'Upload Logo'}</h3>
+      <Dropzone
+        onDrop={handleDrop}
+        accept={type === 'video' ? 'video/*' : 'image/*'}
+        multiple={false}
+      >
+        {({ getRootProps, getInputProps, isDragActive }) => (
+          <div {...getRootProps()} className={`dropzone ${isDragActive ? 'active' : ''}`}>
+            <input {...getInputProps()} />
+            <p>Drag & drop a {type} here, or click to select</p>
+          </div>
+        )}
+      </Dropzone>
+
+      {selectedFile && (
+        <div className="file-info">
+          <p>Selected file: {selectedFile.name}</p>
+          <p>Size: {formatFileSize(selectedFile.size)}</p>
+        </div>
+      )}
+
+      <p className="size-limit">
+        Maximum {type} size: {formatFileSize(maxSize)}
+      </p>
+
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">File uploaded successfully!</div>}
+
+      <button
+        className="process-button"
+        onClick={handleUpload}
+        disabled={!selectedFile || success}
+      >
+        Upload {type}
+      </button>
     </div>
   );
 }

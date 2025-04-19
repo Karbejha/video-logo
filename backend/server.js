@@ -105,16 +105,25 @@ const processVideo = async (videoPath, logoPath, outputPath, position, size) => 
   const scale = `scale=iw*${size/100}:-1`;
 
   return new Promise((resolve, reject) => {
-    const command = `ffmpeg -i ${videoPath} -i ${logoPath} -filter_complex "[1:v]${scale}[logo];[0:v][logo]overlay=${overlay}" -c:a copy ${outputPath}`;
+    // Add memory limits and other optimizations to FFmpeg command
+    const command = `ffmpeg -i ${videoPath} -i ${logoPath} -filter_complex "[1:v]${scale}[logo];[0:v][logo]overlay=${overlay}" -c:a copy -preset ultrafast -max_muxing_queue_size 1024 -y ${outputPath}`;
     
-    exec(command, (err, stdout, stderr) => {
+    const process = exec(command, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
       if (err) {
         console.error('FFmpeg error:', err);
         console.error('FFmpeg stderr:', stderr);
-        return reject(err);
+        return reject(new Error('Video processing failed. The file might be too large or in an unsupported format.'));
       }
       resolve();
     });
+
+    // Add timeout to kill process if it takes too long
+    const timeout = setTimeout(() => {
+      process.kill();
+      reject(new Error('Video processing timed out. Please try with a shorter video.'));
+    }, 300000); // 5 minutes timeout
+
+    process.on('exit', () => clearTimeout(timeout));
   });
 };
 
@@ -127,6 +136,13 @@ app.get('/api-url', (req, res) => {
 app.post('/process', upload.fields([{ name: 'video' }, { name: 'logo' }]), async (req, res) => {
   console.log('Processing request:', req.body);
   
+  if (!req.files || !req.files.video || !req.files.logo) {
+    return res.status(400).json({
+      success: false,
+      error: 'Both video and logo files are required'
+    });
+  }
+
   const { logoPosition = 'top-left', logoSize = 20 } = req.body;
   const videoFile = req.files.video[0];
   const logoFile = req.files.logo[0];
@@ -136,7 +152,12 @@ app.post('/process', upload.fields([{ name: 'video' }, { name: 'logo' }]), async
     // Validate video duration
     const videoDuration = await getVideoDuration(videoFile.path);
     if (videoDuration > MAX_VIDEO_DURATION) {
-      throw new Error(`Video exceeds max duration of ${MAX_VIDEO_DURATION} seconds`);
+      cleanup(videoFile.path);
+      cleanup(logoFile.path);
+      return res.status(400).json({
+        success: false,
+        error: `Video exceeds max duration of ${MAX_VIDEO_DURATION} seconds`
+      });
     }
 
     // Process video with FFmpeg
