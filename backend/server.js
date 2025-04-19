@@ -18,7 +18,7 @@ const limiter = rateLimit({
 
 // Validate formats and set limits
 const validVideoFormats = ['.mp4', '.webm', '.ogg'];
-const validLogoFormats = ['.png', '.jpeg', '.svg'];
+const validLogoFormats = ['.png', '.jpg', '.jpeg', '.svg'];
 const MAX_VIDEO_DURATION = 900; // 15 minutes
 const MAX_VIDEO_SIZE = 30 * 1024 * 1024; // 30MB
 const MAX_LOGO_SIZE = 1 * 1024 * 1024; // 1MB
@@ -44,7 +44,7 @@ const upload = multer({
       return cb(new Error('Invalid video format. Only MP4, WEBM, and OGG are supported.'));
     }
     if (file.fieldname === 'logo' && !validLogoFormats.includes(ext)) {
-      return cb(new Error('Invalid logo format. Only PNG, JPEG, and SVG are supported.'));
+      return cb(new Error('Invalid logo format. Only PNG, JPG, JPEG, and SVG are supported.'));
     }
     cb(null, true);
   }

@@ -122,7 +122,7 @@ const App = () => {
     if (file) {
       const fileType = file.type.toLowerCase();
       if (!Object.keys(validLogoTypes).includes(fileType)) {
-        setError('Invalid logo format. Only PNG, JPEG, and SVG are supported.');
+        setError('Invalid logo format. Only PNG, JPG, JPEG, and SVG are supported.');
         return;
       }
       setLogo(file);
@@ -224,7 +224,7 @@ const App = () => {
 
           <div className="upload-box">
             <h3>Upload Logo</h3>
-            <p className="subtitle">(PNG, JPEG, SVG, max 1MB)</p>
+            <p className="subtitle">(PNG, JPG, JPEG, SVG, max 1MB)</p>
             <CustomDropzone 
               onDrop={onDropLogo} 
               accept={validLogoTypes}
