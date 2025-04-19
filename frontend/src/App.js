@@ -16,6 +16,41 @@ const validLogoTypes = {
   'image/svg+xml': ['.svg']
 };
 
+// Custom Dropzone component
+const CustomDropzone = ({ onDrop, accept, maxFiles, maxSize }) => {
+  const handleDrop = useCallback((acceptedFiles, rejectedFiles) => {
+    if (rejectedFiles && rejectedFiles.length > 0) {
+      const error = rejectedFiles[0].errors[0];
+      if (error.code === 'file-too-large') {
+        console.error('File is too large');
+        return;
+      }
+    }
+    onDrop(acceptedFiles);
+  }, [onDrop]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: handleDrop,
+    accept,
+    maxFiles,
+    multiple: false,
+    maxSize
+  });
+
+  return (
+    <div
+      {...getRootProps()}
+      className={`dropzone ${isDragActive ? 'active' : ''}`}
+    >
+      <input {...getInputProps()} />
+      <div>
+        <p>{isDragActive ? 'Drop the file here' : 'Drag & drop a file here'}</p>
+        <p className="dropzone-hint">or click to select</p>
+      </div>
+    </div>
+  );
+};
+
 // Get API URL from environment variable or default to localhost
 const DEFAULT_API_URL = process.env.REACT_APP_API_URL?.trim().replace(/\s+/g, '') || 'http://localhost:5000';
 
@@ -172,11 +207,12 @@ const App = () => {
         <div className="upload-section">
           <div className="upload-box">
             <h3>Upload Video</h3>
-            <p className="subtitle">(MP4, WEBM, OGG, max 30MB)</p>
-            <Dropzone 
+            <p className="subtitle">(MP4, WEBM, OGG, max 15MB)</p>
+            <CustomDropzone 
               onDrop={onDropVideo} 
               accept={validVideoTypes}
               maxFiles={1}
+              maxSize={15 * 1024 * 1024}
             />
             {video && (
               <div className="file-info">
@@ -189,10 +225,11 @@ const App = () => {
           <div className="upload-box">
             <h3>Upload Logo</h3>
             <p className="subtitle">(PNG, JPEG, SVG, max 1MB)</p>
-            <Dropzone 
+            <CustomDropzone 
               onDrop={onDropLogo} 
               accept={validLogoTypes}
               maxFiles={1}
+              maxSize={1 * 1024 * 1024}
             />
             {logo && (
               <div className="file-info">
@@ -274,59 +311,5 @@ const App = () => {
     </div>
   );
 };
-
-function Dropzone({ onDrop, accept, maxFiles }) {
-  const [error, setError] = useState(null);
-
-  const handleDrop = useCallback((acceptedFiles, rejectedFiles) => {
-    if (rejectedFiles && rejectedFiles.length > 0) {
-      const error = rejectedFiles[0].errors[0];
-      if (error.code === 'file-too-large') {
-        setError('File is too large. Please try a smaller file.');
-        return;
-      }
-    }
-    setError(null);
-    onDrop(acceptedFiles);
-  }, [onDrop]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
-    onDrop: handleDrop,
-    accept,
-    maxFiles,
-    multiple: false,
-    maxSize: accept.includes('video/mp4') ? 15 * 1024 * 1024 : 1 * 1024 * 1024
-  });
-  
-  return (
-    <div
-      {...getRootProps()}
-      className={`dropzone ${isDragActive ? 'active' : ''}`}
-      style={{
-        border: '2px dashed #cccccc',
-        borderRadius: '4px',
-        padding: '20px',
-        textAlign: 'center',
-        cursor: 'pointer',
-        backgroundColor: isDragActive ? '#f0f0f0' : '#ffffff',
-        transition: 'all 0.3s ease'
-      }}
-    >
-      <input {...getInputProps()} />
-      {error ? (
-        <p style={{ color: '#d32f2f' }}>{error}</p>
-      ) : (
-        <div>
-          <p style={{ margin: '0' }}>
-            {isDragActive ? 'Drop the file here' : 'Drag & drop a file here'}
-          </p>
-          <p style={{ margin: '8px 0 0', fontSize: '0.9em', color: '#666' }}>
-            or click to select
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default App;
