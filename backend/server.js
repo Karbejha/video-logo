@@ -52,7 +52,12 @@ const upload = multer({
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5000'],
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5000',
+    'https://video-logo.vercel.app',
+    'https://*.vercel.app'
+  ],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
   credentials: true

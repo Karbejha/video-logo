@@ -6,8 +6,8 @@ import './App.css';
 const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg']; // Commonly used video formats
 const validLogoTypes = ['image/png', 'image/jpeg', 'image/svg+xml']; // Commonly used image formats
 
-// Default to localhost in development
-const DEFAULT_API_URL = 'http://localhost:5000';
+// Get API URL from environment variable or default to localhost
+const DEFAULT_API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const App = () => {
   const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL);
@@ -25,27 +25,35 @@ const App = () => {
   useEffect(() => {
     const fetchApiUrl = async () => {
       try {
-        // First try to get the API URL from the server
-        const response = await axios.get(`${DEFAULT_API_URL}/api-url`);
-        setApiUrl(response.data.apiUrl);
+        // Try to get the API URL from the server
+        const response = await axios.get(`${apiUrl}/api-url`);
+        if (response.data.apiUrl) {
+          setApiUrl(response.data.apiUrl);
+        }
         setIsServerConnected(true);
       } catch (error) {
         console.error('Error fetching API URL:', error);
-        // If that fails, check if the server is running locally
-        try {
-          await axios.get(`${DEFAULT_API_URL}/api-url`);
-          setApiUrl(DEFAULT_API_URL);
-          setIsServerConnected(true);
-        } catch (localError) {
-          console.error('Local server also not available:', localError);
-          setError('Please make sure the backend server is running on port 5000');
+        // If we're in production, don't try localhost
+        if (process.env.NODE_ENV === 'production') {
+          setError('Unable to connect to the server. Please try again later.');
           setIsServerConnected(false);
+        } else {
+          // In development, try localhost as fallback
+          try {
+            await axios.get('http://localhost:5000/api-url');
+            setApiUrl('http://localhost:5000');
+            setIsServerConnected(true);
+          } catch (localError) {
+            console.error('Local server also not available:', localError);
+            setError('Please make sure the backend server is running on port 5000');
+            setIsServerConnected(false);
+          }
         }
       }
     };
 
     fetchApiUrl();
-  }, []);
+  }, [apiUrl]);
 
   const onDropVideo = (acceptedFiles) => {
     setError(null);
