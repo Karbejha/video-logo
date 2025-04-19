@@ -207,12 +207,12 @@ const App = () => {
         <div className="upload-section">
           <div className="upload-box">
             <h3>Upload Video</h3>
-            <p className="subtitle">(MP4, WEBM, OGG, max 15MB)</p>
+            <p className="subtitle">(MP4, WEBM, OGG, max 30MB)</p>
             <CustomDropzone 
               onDrop={onDropVideo} 
               accept={validVideoTypes}
               maxFiles={1}
-              maxSize={15 * 1024 * 1024}
+              maxSize={30 * 1024 * 1024}
             />
             {video && (
               <div className="file-info">
