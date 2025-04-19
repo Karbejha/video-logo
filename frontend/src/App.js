@@ -199,8 +199,8 @@ const App = () => {
   return (
     <div className="app-container">
       <header>
-        <h1>Video Logo Overlay Tool</h1>
-        <p>Add your logo to any video in seconds</p>
+        <img src="logo.png" alt="Logo" className="logo" style={{ width: 'auto', height: '150px' }} />  
+        <h2>أداة إضافة اللوغو إلى الفيديوهات من  تنسيقية اللاذقية</h2>
       </header>
 
       <main>
@@ -307,6 +307,9 @@ const App = () => {
             </a>
           </div>
         )}
+        <p>
+          جميع الحقوق محفوظة لتنسيقية اللاذقية
+        </p>
       </main>
     </div>
   );
