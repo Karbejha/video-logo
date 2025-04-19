@@ -3,8 +3,18 @@ import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 import './App.css';
 
-const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg']; // Commonly used video formats
-const validLogoTypes = ['image/png', 'image/jpeg', 'image/svg+xml']; // Commonly used image formats
+// Define valid file types with their extensions and MIME types
+const validVideoTypes = {
+  'video/mp4': ['.mp4'],
+  'video/webm': ['.webm'],
+  'video/ogg': ['.ogg']
+};
+
+const validLogoTypes = {
+  'image/png': ['.png'],
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/svg+xml': ['.svg']
+};
 
 // Get API URL from environment variable or default to localhost
 const DEFAULT_API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -59,6 +69,17 @@ const App = () => {
     setError(null);
     const file = acceptedFiles[0];
     if (file) {
+      // Validate file type
+      const fileExtension = file.name.split('.').pop().toLowerCase();
+      const isValidType = Object.values(validVideoTypes).some(extensions => 
+        extensions.includes(`.${fileExtension}`)
+      );
+
+      if (!isValidType) {
+        setError('Invalid video format. Only MP4, WEBM, and OGG are supported.');
+        return;
+      }
+
       setVideo(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
@@ -69,6 +90,17 @@ const App = () => {
     setError(null);
     const file = acceptedFiles[0];
     if (file) {
+      // Validate file type
+      const fileExtension = file.name.split('.').pop().toLowerCase();
+      const isValidType = Object.values(validLogoTypes).some(extensions => 
+        extensions.includes(`.${fileExtension}`)
+      );
+
+      if (!isValidType) {
+        setError('Invalid logo format. Only PNG, JPEG, and SVG are supported.');
+        return;
+      }
+
       setLogo(file);
     }
   };
@@ -161,7 +193,11 @@ const App = () => {
           <div className="upload-box">
             <h3>Upload Video</h3>
             <p className="subtitle">(MP4, WEBM, OGG, max 30MB)</p>
-            <Dropzone onDrop={onDropVideo} accept={validVideoTypes.join(',')} />
+            <Dropzone 
+              onDrop={onDropVideo} 
+              accept={Object.keys(validVideoTypes).join(',')}
+              maxFiles={1}
+            />
             {video && (
               <div className="file-info">
                 <p>Selected: {video.name}</p>
@@ -173,7 +209,11 @@ const App = () => {
           <div className="upload-box">
             <h3>Upload Logo</h3>
             <p className="subtitle">(PNG, JPEG, SVG, max 1MB)</p>
-            <Dropzone onDrop={onDropLogo} accept={validLogoTypes.join(',')} />
+            <Dropzone 
+              onDrop={onDropLogo} 
+              accept={Object.keys(validLogoTypes).join(',')}
+              maxFiles={1}
+            />
             {logo && (
               <div className="file-info">
                 <p>Selected: {logo.name}</p>
@@ -255,10 +295,11 @@ const App = () => {
   );
 };
 
-function Dropzone({ onDrop, accept }) {
+function Dropzone({ onDrop, accept, maxFiles }) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
     accept,
+    maxFiles,
     multiple: false
   });
   
