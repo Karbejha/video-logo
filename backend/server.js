@@ -13,16 +13,16 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 60 * 60 * 1000, // 60 minutes
   max: 100 // limit each IP to 100 requests per windowMs
 });
 
 // Validate formats and set limits
 const validVideoFormats = ['.mp4', '.webm', '.ogg'];
 const validLogoFormats = ['.png', '.jpg', '.jpeg', '.svg'];
-const MAX_VIDEO_DURATION = 900; // 15 minutes
-const MAX_VIDEO_SIZE = 30 * 1024 * 1024; // 30MB
-const MAX_LOGO_SIZE = 1 * 1024 * 1024; // 1MB
+const MAX_VIDEO_DURATION = 3600; // 60 minutes
+const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
+const MAX_LOGO_SIZE = 10 * 1024 * 1024; // 10MB
 const uploadFolder = 'uploads';
 
 // Configure multer storage
