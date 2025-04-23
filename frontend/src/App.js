@@ -136,8 +136,8 @@ const App = () => {
     }
 
     // Size validation
-    const MAX_VIDEO_SIZE = 15 * 1024 * 1024; // 15MB for free tier
-    const MAX_LOGO_SIZE = 1 * 1024 * 1024; // 1MB
+    const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB for free tier
+    const MAX_LOGO_SIZE = 10 * 1024 * 1024; // 10MB
 
     if (video.size > MAX_VIDEO_SIZE) {
       setError('Video file size should be less than 15MB for the free tier');
@@ -169,7 +169,7 @@ const App = () => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setProgress(percentCompleted);
         },
-        timeout: 300000 // 5 minutes
+        timeout: 900000 // 15 minutes
       });
 
       if (response.data.success) {
@@ -207,12 +207,12 @@ const App = () => {
         <div className="upload-section">
           <div className="upload-box">
             <h3>Upload Video</h3>
-            <p className="subtitle">(MP4, WEBM, OGG, max 30MB)</p>
+            <p className="subtitle">(MP4, WEBM, OGG, max 500MB)</p>
             <CustomDropzone 
               onDrop={onDropVideo} 
               accept={validVideoTypes}
               maxFiles={1}
-              maxSize={30 * 1024 * 1024}
+              maxSize={500 * 1024 * 1024}
             />
             {video && (
               <div className="file-info">
@@ -224,12 +224,12 @@ const App = () => {
 
           <div className="upload-box">
             <h3>Upload Logo</h3>
-            <p className="subtitle">(PNG, JPG, JPEG, SVG, max 1MB)</p>
+            <p className="subtitle">(PNG, JPG, JPEG, SVG, max 10MB)</p>
             <CustomDropzone 
               onDrop={onDropLogo} 
               accept={validLogoTypes}
               maxFiles={1}
-              maxSize={1 * 1024 * 1024}
+              maxSize={10 * 1024 * 1024}
             />
             {logo && (
               <div className="file-info">
