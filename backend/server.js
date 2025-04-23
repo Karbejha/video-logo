@@ -7,6 +7,7 @@ const { exec } = require('child_process');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
